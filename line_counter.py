@@ -119,11 +119,10 @@ def main():
         directories = [full_directory] + scan_for_directories(full_directory)
         print(f"{len(directories)} folder(s) found.")
         wait_for_enter()
-        clear()
 
         # Filtering out directories
-        user_input = ""
         while True:
+            clear()
             print("Current directories:")
             for index, directory in enumerate(directories):
                 is_excluded = "" if directory not in directories_excluded else " (excluded)"
@@ -162,10 +161,10 @@ def main():
         extensions = scan_for_extensions(directories_included)
         print(f"{len(extensions)} extension(s) found.")
         wait_for_enter()
-        clear()
 
         # Filtering out extensions
         while True:
+            clear()
             print("Extensions:")
             for index, extension in enumerate(extensions):
                 is_excluded = " (excluded)" if extension not in extensions_included else ""
