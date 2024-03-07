@@ -1,5 +1,5 @@
 # Line Counter
-Have you ever been curious to see how much code you wrote for one project? This simple script that will calculate exactly that/
+Have you ever been curious to see how much code you wrote for one project? This simple script that will calculate exactly that.
 
 # How it works
 1. It asks you for the directory (folder) of your project.
