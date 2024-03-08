@@ -1,5 +1,6 @@
 # Imports
 from rich.console import Console
+from rich import print as rprint
 import questionary
 import os
 import readchar
@@ -14,11 +15,11 @@ def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def print_error(text: str):
+def print_error(text: str | int | float):
     CONSOLE.print(text, style="red")
 
 
-def print_green(text: str):
+def print_green(text: str | int | float):
     CONSOLE.print(text, style="green")
 
 
@@ -65,11 +66,8 @@ def scan_for_extensions(paths: list[str]) -> list[str]:
     return extensions
 
 
-def scan_for_directories(path: str, original_directory="") -> list[str]:
+def scan_for_directories(path: str) -> list[str]:
     results = []
-    if not original_directory:
-        original_directory = path.split("\\")[-1]
-
     for item in os.listdir(path):
         if os.path.isdir(os.path.join(path, item)):
             results.append(os.path.join(path, item))
@@ -116,7 +114,13 @@ def main():
             continue
 
         print("Searching for directories... Please be patient...\n")
-        directories = [full_directory] + scan_for_directories(full_directory)
+        try:
+            directories = [full_directory] + scan_for_directories(full_directory)
+        except PermissionError:
+            print_error("Access to this directory was denied.")
+            wait_for_enter()
+            continue
+
         print(f"{len(directories)} folder(s) found.")
         wait_for_enter()
 
@@ -125,21 +129,27 @@ def main():
             clear()
             print("Current directories:")
             for index, directory in enumerate(directories):
-                is_excluded = "" if directory not in directories_excluded else " (excluded)"
+                is_excluded = "" if directory not in directories_excluded else " [yellow](excluded)[/yellow]"
                 if index:
                     directory_formatted = reduce_path(directory, directories[0].split("\\")[-1])
                 else:
                     directory_formatted = directory.split("\\")[-1]
-                print(f"{index + 1}. {directory_formatted}{is_excluded}")
+                rprint(f"{index + 1}. {directory_formatted}{is_excluded}")
 
             user_input = input(
-                "\nPlease enter the number of folder you wish to exclude (or include) (enter none to continue): ").strip()
+                "\nPlease enter the number of folder you wish to exclude (or include) (enter none to continue, \"*\" for exclude all): ").strip()
             if not user_input:
                 break
+            elif user_input == "*":
+                directories_excluded = directories.copy()
             elif not user_input.isdigit():
                 print("Please enter a number.")
+                wait_for_enter()
+                continue
             elif 0 > int(user_input) or int(user_input) > len(directories):
                 print("Please enter a valid number of a directory listed above.")
+                wait_for_enter()
+                continue
             else:
                 directory = directories[int(user_input) - 1]
                 if directory in directories_excluded:
@@ -167,15 +177,20 @@ def main():
             clear()
             print("Extensions:")
             for index, extension in enumerate(extensions):
-                is_excluded = " (excluded)" if extension not in extensions_included else ""
-                print(f"{index + 1}. {extension}{is_excluded}")
+                is_excluded = " [yellow](excluded)[/yellow]" if extension not in extensions_included else ""
+                rprint(f"{index + 1}. {extension}{is_excluded}")
 
-            extension = input("\nEnter an extension you wish to include (enter none to continue): ").strip().lower()
+            extension = input("\nEnter an extension you wish to include (enter none to continue, \"*\" for include all): ").strip().lower()
             if not extension:
                 break
 
+            if extension == "*":
+                extensions_included = extensions.copy()
+                continue
+
             if extension not in extensions:
                 print("Please enter an extension that is in the list.")
+                wait_for_enter()
                 continue
 
             if extension in extensions_included:
@@ -192,11 +207,14 @@ def main():
 
         # Counting line counts
         print("Checking files...")
-        directory_length_counts = accumulate_counts(directories_included, extensions_included)
-        total = sum(directory_length_counts)
-        print(f"\nThe total line length is {total}.")
-        wait_for_enter()
-
+        try:
+            directory_length_counts = accumulate_counts(directories_included, extensions_included)
+            total = sum(directory_length_counts)
+            print(f"\nThe total line length is {total}.")
+            wait_for_enter()
+        except UnicodeDecodeError as e:
+            print_error(f"\nAn error occurred while decoding a file.\nException details: {str(e)}")
+            wait_for_enter()
 
 # Start
 if __name__ == "__main__":
